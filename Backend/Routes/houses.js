@@ -5,6 +5,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const House = require('../models/House');
 const Transaction = require('../models/Transaction');
 const authMiddleware = require('../Middleware/authMiddleware');
+const axios = require('axios');
 require('dotenv').config();
 
 cloudinary.config({
@@ -57,11 +58,13 @@ const router = express.Router();
 // });
 
 // Create a new house listing with images and video
-router.post('/', upload.fields([{ name: 'images' }, { name: 'video' }]), async (req, res) => {
+router.post('/', upload.fields([{ name: 'images' }, { name: 'videos' }]), async (req, res) => {
   try {
     const { title, description, area_type, availability, location, size, society, total_sqft, bath, balcony, price } = req.body;
     const images = req.files['images'] ? req.files['images'].map(file => file.path) : [];
-    const video = req.files['video'] ? req.files['video'][0].path : null;
+    // const video = req.files['video'] ? req.files['video'][0].path : null;
+    const videos = req.files['videos'] ? req.files['videos'].map(file => file.path) : [];
+
 
     const house = new House({
       title,
@@ -76,7 +79,7 @@ router.post('/', upload.fields([{ name: 'images' }, { name: 'video' }]), async (
       balcony,
       price,
       images,
-      video,
+      videos,
       // seller: req.user.id
     });
 
@@ -99,14 +102,40 @@ router.post('/', upload.fields([{ name: 'images' }, { name: 'video' }]), async (
 // });
 
 // Get all houses
+// router.get('/', async (req, res) => {
+//   try {
+//     const houses = await House.find().populate('seller', 'name');
+//     res.json(houses);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to fetch houses' });
+//   }
+// });
+
+// routes/houses.js
+
 router.get('/', async (req, res) => {
   try {
-    const houses = await House.find().populate('seller', 'name');
+    const { search, area_type, minPrice, maxPrice } = req.query;
+    let query = { isAvailable: true };  // Assuming you only want to show available houses
+
+    if (search) {
+      query.$or = [
+        { title: new RegExp(search, 'i') },
+        { location: new RegExp(search, 'i') }
+      ];
+    }
+    if (area_type) query.area_type = area_type;
+    if (minPrice) query.price = { ...query.price, $gte: Number(minPrice) };
+    if (maxPrice) query.price = { ...query.price, $lte: Number(maxPrice) };
+
+    const houses = await House.find(query).populate('seller', 'name');
     res.json(houses);
   } catch (error) {
+    console.error("Error fetching houses:", error);
     res.status(500).json({ error: 'Failed to fetch houses' });
   }
 });
+
 
 // Buy a house
 router.post('/:houseId/buy', authMiddleware, async (req, res) => {
@@ -142,5 +171,59 @@ router.post('/:houseId/buy', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to complete purchase' });
   }
 });
+
+
+// Location suggestions
+router.get('/location-suggestions', async (req, res) => {
+  const { query } = req.query;
+  if (!query) return res.status(400).json({ error: 'Query parameter is required' });
+
+  try {
+    const response = await axios.get(`https://photon.komoot.io/api/?q=${query}`);
+    const locations = response.data.features
+      .filter(feature => feature.properties.country === "India")
+      .map(feature => ({
+        label: feature.properties.name,
+        value: `${feature.geometry.coordinates[1]},${feature.geometry.coordinates[0]}`
+      }));
+    res.json(locations);
+  } catch (error) {
+    console.error("Error fetching location suggestions:", error.message);
+    res.status(500).json({ error: 'Failed to fetch location suggestions' });
+  }
+});
+
+// Current location by coordinates
+router.get('/current-location', async (req, res) => {
+  const { latitude, longitude } = req.query;
+  if (!latitude || !longitude) return res.status(400).json({ error: 'Latitude and longitude are required' });
+
+  try {
+    const response = await axios.get(`https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}`);
+    const locationName = response.data.features[0]?.properties.name || "Unknown location";
+    res.json({ locationName });
+  } catch (error) {
+    console.error("Error fetching location name:", error.message);
+    res.status(500).json({ error: 'Failed to fetch location name' });
+  }
+});
+
+// Get house details by ID
+router.get('/:houseId', async (req, res) => {
+  try {
+    const houseId = req.params.houseId;
+    const house = await House.findById(houseId).populate('seller', 'name');
+    if (!house) {
+      return res.status(404).json({ error: 'House not found' });
+    }
+    res.json(house);
+  } catch (error) {
+    console.error("Error fetching house details:", error);
+    res.status(500).json({ error: 'Failed to fetch house details' });
+  }
+});
+
+
+
 
 module.exports = router;

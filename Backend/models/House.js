@@ -13,7 +13,7 @@ const houseSchema = new mongoose.Schema({
   balcony: Number,
   price: Number,
   images: [String],  // Array to store multiple image URLs
-  video: String,      // URL for video
+  videos: [String],      // URL for video
   seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   isAvailable: { type: Boolean, default: true }
 });

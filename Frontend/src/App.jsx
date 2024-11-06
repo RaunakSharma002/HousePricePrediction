@@ -29,7 +29,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/Home/homePage';
 import Register from './pages/Register/register';
 import Profile from './pages/Profile/profile';
-import Navbar from "./components/Home/navbar"
+import Navbar from "./components/Home/navbar";
+import HouseDetail from './components/HouseDetail/houseDetail';
 
 const App = () => {
   return (
@@ -40,6 +41,7 @@ const App = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/house/:houseId" element={<HouseDetail />} />
       </Routes>
     </Router>
   );

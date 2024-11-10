@@ -28,10 +28,7 @@ router.post('/login', async (req, res) => {
     if (!user){
       console.log("user not found");
       return res.status(400).json({ msg: 'User not found' });
-    } 
-
-    console.log("Plain Password:", password);  // Debugging line
-    console.log("Hashed Password in DB:", user.password);
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch){

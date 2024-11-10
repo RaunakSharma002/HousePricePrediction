@@ -3,6 +3,7 @@ const connectDB = require('./Config/db');
 const authRoutes = require('./Routes/auth');
 const houseRoutes = require('./Routes/houses');
 // const transactionRoutes = require('./Routes/transactions');
+const searchRoutes = require('./Routes/search');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 // Routes
 app.use('/auth', authRoutes);
 app.use('/houses', houseRoutes);
+app.use('/houses', searchRoutes);
 // app.use('/api/transactions', transactionRoutes);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

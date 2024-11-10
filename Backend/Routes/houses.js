@@ -1,30 +1,3 @@
-const express = require('express');
-const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const House = require('../models/House');
-const Transaction = require('../models/Transaction');
-const authMiddleware = require('../Middleware/authMiddleware');
-const axios = require('axios');
-require('dotenv').config();
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'houses',
-    resource_type: 'auto'
-  }
-});
-
-const upload = multer({ storage });
-const router = express.Router();
-
 // Create a new house listing with images and video
 // router.post('/', authMiddleware, upload.fields([{ name: 'images' }, { name: 'video' }]), async (req, res) => {
 //   try {
@@ -56,6 +29,78 @@ const router = express.Router();
 //     res.status(500).json({ error: 'Failed to create listing' });
 //   }
 // });
+
+// Get all houses
+// router.get('/', async (req, res) => {
+//   try {
+//     const houses = await House.find().populate('seller', 'name');
+//     res.json(houses);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to fetch houses' });
+//   }
+// });
+
+// router.get('/', async (req, res) => {
+//   try {
+//     const { search, area_type, minPrice, maxPrice } = req.query;
+//     let query = { isAvailable: true };  // Assuming you only want to show available houses
+
+//     if (search) {
+//       query.$or = [
+//         { title: new RegExp(search, 'i') },
+//         { location: new RegExp(search, 'i') }
+//       ];
+//     }
+//     if (area_type) query.area_type = area_type;
+//     if (minPrice) query.price = { ...query.price, $gte: Number(minPrice) };
+//     if (maxPrice) query.price = { ...query.price, $lte: Number(maxPrice) };
+
+//     const houses = await House.find(query).populate('seller', 'name');
+//     res.json(houses);
+//   } catch (error) {
+//     console.error("Error fetching houses:", error);
+//     res.status(500).json({ error: 'Failed to fetch houses' });
+//   }
+// });
+
+// routes/houses.js
+
+
+//------------------------------------------------------------------------------------
+
+const express = require('express');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const House = require('../models/House');
+const Transaction = require('../models/Transaction');
+const authMiddleware = require('../Middleware/authMiddleware');
+const axios = require('axios');
+const UserPreference = require('../models/UserPreference');
+const UserInteraction = require('../models/UserInteraction');
+require('dotenv').config();
+
+
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'houses',
+    resource_type: 'auto'
+  }
+});
+
+const upload = multer({ storage });
+const router = express.Router();
+
+
 
 // Create a new house listing with images and video
 router.post('/', upload.fields([{ name: 'images' }, { name: 'videos' }]), async (req, res) => {
@@ -91,57 +136,119 @@ router.post('/', upload.fields([{ name: 'images' }, { name: 'videos' }]), async 
   }
 });
 
-// Get all houses
-// router.get('/', async (req, res) => {
-//   try {
-//     const houses = await House.find().populate('seller', 'name');
-//     res.json(houses);
-//   } catch (error) {
-//     res.status(500).json({ error: 'Failed to fetch houses' });
-//   }
-// });
+// Update time spent for a user and a property
+router.post('/:houseId/updateTimeSpent', async (req, res) => {
+  const { houseId } = req.params;
+  const { userId, timeSpent } = req.body;
 
-// Get all houses
-// router.get('/', async (req, res) => {
-//   try {
-//     const houses = await House.find().populate('seller', 'name');
-//     res.json(houses);
-//   } catch (error) {
-//     res.status(500).json({ error: 'Failed to fetch houses' });
-//   }
-// });
-
-// routes/houses.js
-
-router.get('/', async (req, res) => {
   try {
-    const { search, area_type, minPrice, maxPrice } = req.query;
-    let query = { isAvailable: true };  // Assuming you only want to show available houses
+    let interaction = await UserInteraction.findOne({ user_id: userId, property_id: houseId });
 
-    if (search) {
-      query.$or = [
-        { title: new RegExp(search, 'i') },
-        { location: new RegExp(search, 'i') }
-      ];
+    if (interaction) {
+      interaction.time_spent += timeSpent; // Increment time spent
+      await interaction.save();
+    } else {
+      // Create new interaction if not found
+      interaction = new UserInteraction({
+        user_id: userId,
+        property_id: houseId,
+        time_spent: timeSpent,
+      });
+      await interaction.save();
     }
-    if (area_type) query.area_type = area_type;
-    if (minPrice) query.price = { ...query.price, $gte: Number(minPrice) };
-    if (maxPrice) query.price = { ...query.price, $lte: Number(maxPrice) };
 
-    const houses = await House.find(query).populate('seller', 'name');
-    res.json(houses);
+    res.status(200).json({ message: 'Time spent updated successfully' });
   } catch (error) {
-    console.error("Error fetching houses:", error);
-    res.status(500).json({ error: 'Failed to fetch houses' });
+    console.error("Error updating time spent:", error);
+    res.status(500).json({ error: 'Failed to update time spent' });
   }
 });
 
+
+// Toggle favorite status of a house for a user
+router.post('/:houseId/favorite', async (req, res) => {
+  const { houseId } = req.params;
+  const { userId } = req.body;
+
+  try {
+    let interaction = await UserInteraction.findOne({ user_id: userId, property_id: houseId });
+
+    if (interaction) {
+      interaction.favorited = !interaction.favorited; // Toggle favorite status
+    } else {
+      interaction = new UserInteraction({
+        user_id: userId,
+        property_id: houseId,
+        favorited: true, // Default to true for new interactions
+      });
+    }
+
+    await interaction.save();
+    res.status(200).json({ message: 'House favorited successfully', favorited: interaction.favorited });
+  } catch (error) {
+    console.error("Error favoriting house:", error);
+    res.status(500).json({ error: 'Failed to favorite house' });
+  }
+});
+
+
+//Making a new Instace of userInteractionn
+router.post('/:houseId/interaction', async (req, res) => {
+  const { houseId } = req.params;
+  const { userId } = req.body;
+
+  if (!houseId || !userId) {
+    return res.status(400).json({ error: 'houseId and userId are required' });
+  }
+
+  try {
+    let userInteraction = await UserInteraction.findOne({ user_id: userId, property_id: houseId });
+
+    if (!userInteraction) {
+      userInteraction = new UserInteraction({
+        user_id: userId,
+        property_id: houseId,
+        time_spent: 0,
+        favorited: false,
+        skipped: false,
+      });
+      await userInteraction.save();
+    }
+
+    res.status(200).json(userInteraction); // Return the created or found interaction
+  } catch (error) {
+    console.error("Error logging user interaction:", error);
+    res.status(500).json({ error: "Failed to log user interaction" });
+  }
+});
+
+// GET route to check if a house is favorited
+router.get('/:houseId/isFavorited', async (req, res) => {
+  const { houseId } = req.params;
+  const { userId } = req.query; // Note: using query parameters as in the original axios request
+
+  try {
+    // Check if there is an interaction for the given user and house
+    const interaction = await UserInteraction.findOne({ user_id: userId, property_id: houseId });
+
+    if (interaction) {
+      // Send back the favorited status
+      res.status(200).json({ favorited: interaction.favorited });
+    } else {
+      // If no interaction exists, default to not favorited
+      res.status(200).json({ favorited: false });
+    }
+  } catch (error) {
+    console.error("Error checking favorite status:", error);
+    res.status(500).json({ error: 'Failed to check favorite status' });
+  }
+});
 
 // Buy a house
 router.post('/:houseId/buy', authMiddleware, async (req, res) => {
   try {
     const houseId = req.params.houseId;
-    const buyerId = req.user.id;
+    const buyerId = req.user.userId;
 
     // Find the house
     const house = await House.findById(houseId);
@@ -222,8 +329,5 @@ router.get('/:houseId', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch house details' });
   }
 });
-
-
-
 
 module.exports = router;

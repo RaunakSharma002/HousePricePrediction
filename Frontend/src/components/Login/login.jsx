@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TextField, Button } from '@mui/material';
 import api from '../../api';
+import { jwtDecode } from "jwt-decode";
 
 const Login = ({ setToken }) => {
   const [email, setEmail] = useState('');
@@ -10,6 +11,12 @@ const Login = ({ setToken }) => {
     try {
       const response = await api.post('/auth/login', { email, password });
       const token = response.data.token;
+
+      // Decode the token using jwt-decode
+      const decodedToken = jwtDecode(token);  // Correctly decode the token
+      const userId = decodedToken.userId;  // Extract userId from the decoded token
+      localStorage.setItem('userId', userId);
+
       setToken(token);
       localStorage.setItem('token', token); 
     } catch (error) {

@@ -325,9 +325,175 @@
 
 //---------------------------------------------------------------------
 
+// import React, { useState } from 'react';
+// import axios from 'axios';
+// import { TextField, Button, Container, Typography, Autocomplete, MenuItem } from '@mui/material';
+// import Grid from '@mui/material/Grid2';
+
+// const HouseForm = () => {
+//   const [houseData, setHouseData] = useState({
+//     title: '',
+//     description: '',
+//     area_type: '',
+//     availability: '',
+//     location: '',
+//     size: '',
+//     society: '',
+//     total_sqft: '',
+//     bath: '',
+//     balcony: '',
+//     price: ''
+//   });
+//   const [images, setImages] = useState([]);
+//   const [videos, setVideos] = useState([]);
+//   const [locationOptions, setLocationOptions] = useState([]);
+
+//   // Define area types directly in the frontend
+//   const areaTypes = ['Urban', 'Suburban', 'Rural'];
+
+//   const handleChange = (e) => {
+//     setHouseData({ ...houseData, [e.target.name]: e.target.value });
+//   };
+
+//   const handleLocationChange = async (e, value) => {
+//     setHouseData({ ...houseData, location: value });
+//     if (value && value.length > 2) {
+//       try {
+//         const response = await axios.get(`http://localhost:5000/houses/location-suggestions`, {
+//           params: { query: value }
+//         });
+//         setLocationOptions(response.data);
+//       } catch (error) {
+//         console.error("Error fetching location suggestions:", error);
+//       }
+//     }
+//   };
+
+//   const setCurrentLocation = () => {
+//     if (navigator.geolocation) {
+//       navigator.geolocation.getCurrentPosition(async (position) => {
+//         const { latitude, longitude } = position.coords;
+//         try {
+//           const response = await axios.get(`http://localhost:5000/houses/current-location`, {
+//             params: { latitude, longitude }
+//           });
+//           const locationName = response.data.locationName;
+//           setHouseData((prevData) => ({ ...prevData, location: locationName }));
+//         } catch (error) {
+//           console.error("Error fetching location name:", error);
+//           alert('Failed to fetch location name');
+//         }
+//       });
+//     } else {
+//       alert('Geolocation is not supported by this browser.');
+//     }
+//   };
+
+//   const handleImageChange = (e) => {
+//     setImages([...e.target.files]);
+//   };
+
+//   const handleVideoChange = (e) => {
+//     setVideos([...e.target.files]);
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     const formData = new FormData();
+//     Object.keys(houseData).forEach((key) => formData.append(key, houseData[key]));
+//     images.forEach((image) => formData.append('images', image));
+//     videos.forEach((video) => formData.append('videos', video));
+
+//     try {
+//       await axios.post('http://localhost:5000/houses', formData, {
+//         headers: {
+//           'Content-Type': 'multipart/form-data'
+//         }
+//       });
+//       alert('House listed successfully!');
+//     } catch (error) {
+//       console.error("Error listing house:", error);
+//       alert('Failed to list house');
+//     }
+//   };
+
+//   return (
+//     <Container maxWidth="sm">
+//       <Typography variant="h4" gutterBottom>List Your House</Typography>
+//       <form onSubmit={handleSubmit}>
+//         <Grid container spacing={2}>
+//           {['title', 'description', 'availability', 'size', 'society', 'total_sqft', 'bath', 'balcony', 'price'].map((field) => (
+//             <Grid xs={12} key={field}>
+//               <TextField
+//                 fullWidth
+//                 name={field}
+//                 label={field.replace('_', ' ').toUpperCase()}
+//                 variant="outlined"
+//                 value={houseData[field]}
+//                 onChange={handleChange}
+//               />
+//             </Grid>
+//           ))}
+//           <Grid xs={12}>
+//             <TextField
+//               select
+//               fullWidth
+//               name="area_type"
+//               label="Area Type"
+//               variant="outlined"
+//               value={houseData.area_type}
+//               onChange={handleChange}
+//             >
+//               {areaTypes.map((type) => (
+//                 <MenuItem key={type} value={type}>
+//                   {type}
+//                 </MenuItem>
+//               ))}
+//             </TextField>
+//           </Grid>
+//           <Grid xs={12}>
+//             <Autocomplete
+//               options={locationOptions}
+//               getOptionLabel={(option) => option.label || ''}
+//               renderInput={(params) => (
+//                 <TextField {...params} label="Location" variant="outlined" />
+//               )}
+//               value={houseData.location ? { label: houseData.location } : null}
+//               onInputChange={(event, newValue) => handleLocationChange(event, newValue)}
+//               onChange={(event, value) => setHouseData({ ...houseData, location: value?.label || '' })}
+//             />
+//           </Grid>
+//           <Grid xs={12}>
+//             <Button variant="contained" onClick={setCurrentLocation}>Use Current Location</Button>
+//           </Grid>
+//           <Grid xs={12}>
+//             <Button variant="contained" component="label">
+//               Upload Images
+//               <input type="file" hidden multiple onChange={handleImageChange} />
+//             </Button>
+//             <Button variant="contained" component="label">
+//               Upload Videos
+//               <input type="file" hidden multiple onChange={handleVideoChange} />
+//             </Button>
+//           </Grid>
+//           <Grid xs={12}>
+//             <Button type="submit" variant="contained" color="primary">Submit</Button>
+//           </Grid>
+//         </Grid>
+//       </form>
+//     </Container>
+//   );
+// };
+
+// export default HouseForm;
+
+
+//-----------------------------------------------------------------------------------------
+
+
 import React, { useState } from 'react';
 import axios from 'axios';
-import { TextField, Button, Container, Typography, Autocomplete, MenuItem } from '@mui/material';
+import { TextField, Button, Container, Typography, Autocomplete, MenuItem, FormControl, InputLabel, Select, Chip, OutlinedInput } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 
 const HouseForm = () => {
@@ -342,17 +508,23 @@ const HouseForm = () => {
     total_sqft: '',
     bath: '',
     balcony: '',
-    price: ''
+    price: '',
+    amenities: [] // Added amenities field
   });
   const [images, setImages] = useState([]);
   const [videos, setVideos] = useState([]);
   const [locationOptions, setLocationOptions] = useState([]);
 
-  // Define area types directly in the frontend
   const areaTypes = ['Urban', 'Suburban', 'Rural'];
+  const amenitiesList = ['Swimming Pool', 'Garden', 'Gym', 'Parking', 'Security', 'Playground', 'Clubhouse'];
 
   const handleChange = (e) => {
     setHouseData({ ...houseData, [e.target.name]: e.target.value });
+  };
+
+  const handleAmenitiesChange = (event) => {
+    const { value } = event.target;
+    setHouseData({ ...houseData, amenities: typeof value === 'string' ? value.split(',') : value });
   };
 
   const handleLocationChange = async (e, value) => {
@@ -428,56 +600,97 @@ const HouseForm = () => {
                 fullWidth
                 name={field}
                 label={field.replace('_', ' ').toUpperCase()}
-                variant="outlined"
                 value={houseData[field]}
                 onChange={handleChange}
+                required
               />
             </Grid>
           ))}
-          <Grid xs={12}>
-            <TextField
-              select
-              fullWidth
-              name="area_type"
-              label="Area Type"
-              variant="outlined"
-              value={houseData.area_type}
-              onChange={handleChange}
-            >
-              {areaTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
+
           <Grid xs={12}>
             <Autocomplete
               options={locationOptions}
-              getOptionLabel={(option) => option.label || ''}
+              freeSolo
+              onInputChange={handleLocationChange}
               renderInput={(params) => (
-                <TextField {...params} label="Location" variant="outlined" />
+                <TextField
+                  {...params}
+                  label="Location"
+                  name="location"
+                  value={houseData.location}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                />
               )}
-              value={houseData.location ? { label: houseData.location } : null}
-              onInputChange={(event, newValue) => handleLocationChange(event, newValue)}
-              onChange={(event, value) => setHouseData({ ...houseData, location: value?.label || '' })}
             />
           </Grid>
+
           <Grid xs={12}>
-            <Button variant="contained" onClick={setCurrentLocation}>Use Current Location</Button>
+            <FormControl fullWidth>
+              <InputLabel>Area Type</InputLabel>
+              <Select
+                name="area_type"
+                value={houseData.area_type}
+                onChange={handleChange}
+                required
+              >
+                {areaTypes.map((type) => (
+                  <MenuItem key={type} value={type}>{type}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
+
+          <Grid xs={12}>
+            <FormControl fullWidth>
+              <InputLabel>Amenities</InputLabel>
+              <Select
+                multiple
+                value={houseData.amenities}
+                onChange={handleAmenitiesChange}
+                input={<OutlinedInput label="Amenities" />}
+                renderValue={(selected) => (
+                  <div>
+                    {selected.map((value) => (
+                      <Chip key={value} label={value} />
+                    ))}
+                  </div>
+                )}
+              >
+                {amenitiesList.map((amenity) => (
+                  <MenuItem key={amenity} value={amenity}>
+                    {amenity}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid xs={12}>
+            <Button variant="contained" color="secondary" onClick={setCurrentLocation}>
+              Use Current Location
+            </Button>
+          </Grid>
+
           <Grid xs={12}>
             <Button variant="contained" component="label">
               Upload Images
-              <input type="file" hidden multiple onChange={handleImageChange} />
-            </Button>
-            <Button variant="contained" component="label">
-              Upload Videos
-              <input type="file" hidden multiple onChange={handleVideoChange} />
+              <input type="file" hidden multiple accept="image/*" onChange={handleImageChange} />
             </Button>
           </Grid>
+
           <Grid xs={12}>
-            <Button type="submit" variant="contained" color="primary">Submit</Button>
+            <Button variant="contained" component="label">
+              Upload Videos
+              <input type="file" hidden multiple accept="video/*" onChange={handleVideoChange} />
+            </Button>
+          </Grid>
+
+          <Grid xs={12}>
+            <Button type="submit" variant="contained" color="primary">
+              Submit
+            </Button>
           </Grid>
         </Grid>
       </form>
@@ -486,6 +699,7 @@ const HouseForm = () => {
 };
 
 export default HouseForm;
+
 
 
 

@@ -103,13 +103,44 @@ const router = express.Router();
 
 
 // Create a new house listing with images and video
+// router.post('/', upload.fields([{ name: 'images' }, { name: 'videos' }]), async (req, res) => {
+//   try {
+//     const { title, description, area_type, availability, location, size, society, total_sqft, bath, balcony, price } = req.body;
+//     const images = req.files['images'] ? req.files['images'].map(file => file.path) : [];
+//     // const video = req.files['video'] ? req.files['video'][0].path : null;
+//     const videos = req.files['videos'] ? req.files['videos'].map(file => file.path) : [];
+
+
+//     const house = new House({
+//       title,
+//       description,
+//       area_type,
+//       availability,
+//       location,
+//       size,
+//       society,
+//       total_sqft,
+//       bath,
+//       balcony,
+//       price,
+//       images,
+//       videos,
+//       // seller: req.user.id
+//     });
+
+//     await house.save();
+//     res.status(201).json(house);
+//   } catch (error) {
+//     console.error("Error creating house listing:", error);
+//     res.status(500).json({ error: 'Failed to create listing' });
+//   }
+// });
+
 router.post('/', upload.fields([{ name: 'images' }, { name: 'videos' }]), async (req, res) => {
   try {
-    const { title, description, area_type, availability, location, size, society, total_sqft, bath, balcony, price } = req.body;
+    const { title, description, area_type, availability, location, size, society, total_sqft, bath, balcony, price, amenities } = req.body;
     const images = req.files['images'] ? req.files['images'].map(file => file.path) : [];
-    // const video = req.files['video'] ? req.files['video'][0].path : null;
     const videos = req.files['videos'] ? req.files['videos'].map(file => file.path) : [];
-
 
     const house = new House({
       title,
@@ -125,7 +156,7 @@ router.post('/', upload.fields([{ name: 'images' }, { name: 'videos' }]), async 
       price,
       images,
       videos,
-      // seller: req.user.id
+      amenities: amenities ? amenities.split(',') : [], // Store amenities as an array
     });
 
     await house.save();
@@ -135,6 +166,7 @@ router.post('/', upload.fields([{ name: 'images' }, { name: 'videos' }]), async 
     res.status(500).json({ error: 'Failed to create listing' });
   }
 });
+
 
 // Update time spent for a user and a property
 router.post('/:houseId/updateTimeSpent', async (req, res) => {
@@ -327,6 +359,32 @@ router.get('/:houseId', async (req, res) => {
   } catch (error) {
     console.error("Error fetching house details:", error);
     res.status(500).json({ error: 'Failed to fetch house details' });
+  }
+});
+
+// Endpoint to get similar properties based on certain criteria
+router.get('/:houseId/similar', async (req, res) => {
+  try {
+    const houseId = req.params.houseId;
+    const house = await House.findById(houseId);
+
+    if (!house) {
+      return res.status(404).json({ error: 'House not found' });
+    }
+
+    // Define similarity criteria (price within 10%, same location, similar amenities)
+    const similarHouses = await House.find({
+      _id: { $ne: houseId }, // Exclude the current house
+      location: house.location,
+      price: { $gte: house.price * 0.9, $lte: house.price * 1.1 }, // Price within 10%
+      amenities: { $in: house.amenities }, // At least one matching amenity
+      isAvailable: true,
+    }).limit(5); // Limit to 5 similar properties
+
+    res.json(similarHouses);
+  } catch (error) {
+    console.error('Error fetching similar houses:', error);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 

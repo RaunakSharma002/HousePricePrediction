@@ -31,6 +31,7 @@ import Register from './pages/Register/register';
 import Profile from './pages/Profile/profile';
 import Navbar from "./components/Home/navbar";
 import HouseDetail from './components/HouseDetail/houseDetail';
+import ComparePage from './components/Compare/ComparePage';
 
 const App = () => {
   return (
@@ -42,6 +43,7 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/house/:houseId" element={<HouseDetail />} />
+        <Route path="/compare" element={<ComparePage />} />
       </Routes>
     </Router>
   );

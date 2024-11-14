@@ -80,6 +80,7 @@ const axios = require('axios');
 const UserPreference = require('../models/UserPreference');
 const UserInteraction = require('../models/UserInteraction');
 require('dotenv').config();
+const cosineSimilarity = require('cosine-similarity');
 
 
 
@@ -362,29 +363,72 @@ router.get('/:houseId', async (req, res) => {
   }
 });
 
-// Endpoint to get similar properties based on certain criteria
+//---------------------------------------------------------------------------
+
+// // Endpoint to get similar properties based on certain criteria
+// router.get('/:houseId/similar', async (req, res) => {
+//   try {
+//     const houseId = req.params.houseId;
+//     const house = await House.findById(houseId);
+
+//     if (!house) {
+//       return res.status(404).json({ error: 'House not found' });
+//     }
+
+//     // Define similarity criteria (price within 10%, same location, similar amenities)
+//     const similarHouses = await House.find({
+//       _id: { $ne: houseId }, // Exclude the current house
+//       location: house.location,
+//       price: { $gte: house.price * 0.9, $lte: house.price * 1.1 }, // Price within 10%
+//       amenities: { $in: house.amenities }, // At least one matching amenity
+//       isAvailable: true,
+//     }).limit(5); // Limit to 5 similar properties
+
+//     res.json(similarHouses);
+//   } catch (error) {
+//     console.error('Error fetching similar houses:', error);
+//     res.status(500).json({ error: 'An error occurred' });
+//   }
+// });
+
+
+// Utility function to calculate similarity score
+function calculateSimilarity(base, target) {
+  // Customize based on attributes you want to compare
+  const baseFeatures = [base.price, base.size, base.total_sqft, base.bath, base.balcony];
+  const targetFeatures = [target.price, target.size, target.total_sqft, target.bath, target.balcony];
+  
+  // Calculate cosine similarity
+  return cosineSimilarity(baseFeatures, targetFeatures);
+}
+
+// Fetch similar properties
+async function findSimilarProperties(baseProperty, allProperties) {
+  return allProperties
+    .map((property) => ({
+      property,
+      similarityScore: calculateSimilarity(baseProperty, property)
+    }))
+    .filter((item) => item.similarityScore > 0.7) // Adjust threshold as needed
+    .sort((a, b) => b.similarityScore - a.similarityScore)
+    .map((item) => item.property);
+}
+
+// Define the API route
 router.get('/:houseId/similar', async (req, res) => {
+  const { houseId } = req.params;
+  
   try {
-    const houseId = req.params.houseId;
-    const house = await House.findById(houseId);
+    const baseProperty = await House.findById(houseId);
+    if (!baseProperty) return res.status(404).send("Base property not found");
 
-    if (!house) {
-      return res.status(404).json({ error: 'House not found' });
-    }
+    const allProperties = await House.find();
+    const similarProperties = await findSimilarProperties(baseProperty, allProperties);
 
-    // Define similarity criteria (price within 10%, same location, similar amenities)
-    const similarHouses = await House.find({
-      _id: { $ne: houseId }, // Exclude the current house
-      location: house.location,
-      price: { $gte: house.price * 0.9, $lte: house.price * 1.1 }, // Price within 10%
-      amenities: { $in: house.amenities }, // At least one matching amenity
-      isAvailable: true,
-    }).limit(5); // Limit to 5 similar properties
-
-    res.json(similarHouses);
+    res.json(similarProperties);
   } catch (error) {
-    console.error('Error fetching similar houses:', error);
-    res.status(500).json({ error: 'An error occurred' });
+    console.error("Error fetching similar houses:", error);
+    res.status(500).send("Server error");
   }
 });
 

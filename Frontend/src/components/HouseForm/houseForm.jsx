@@ -610,19 +610,13 @@ const HouseForm = () => {
           <Grid xs={12}>
             <Autocomplete
               options={locationOptions}
-              freeSolo
-              onInputChange={handleLocationChange}
+              getOptionLabel={(option) => option.label || ''}
               renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Location"
-                  name="location"
-                  value={houseData.location}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                />
+                <TextField {...params} label="Location" variant="outlined" />
               )}
+              value={houseData.location ? { label: houseData.location } : null}
+              onInputChange={(event, newValue) => handleLocationChange(event, newValue)}
+              onChange={(event, value) => setHouseData({ ...houseData, location: value?.label || '' })}
             />
           </Grid>
 
@@ -668,9 +662,7 @@ const HouseForm = () => {
           </Grid>
 
           <Grid xs={12}>
-            <Button variant="contained" color="secondary" onClick={setCurrentLocation}>
-              Use Current Location
-            </Button>
+            <Button variant="contained" onClick={setCurrentLocation}>Use Current Location</Button>
           </Grid>
 
           <Grid xs={12}>
@@ -688,9 +680,7 @@ const HouseForm = () => {
           </Grid>
 
           <Grid xs={12}>
-            <Button type="submit" variant="contained" color="primary">
-              Submit
-            </Button>
+            <Button type="submit" variant="contained" color="primary">Submit</Button>
           </Grid>
         </Grid>
       </form>

@@ -11,7 +11,7 @@ const houseSchema = new mongoose.Schema({
   total_sqft: String,
   bath: Number,
   balcony: Number,
-  price: Number,
+  price: { type: Number, default: 0 },
   images: [String],  // Array to store multiple image URLs
   videos: [String],      // URL for video
   amenities: [String],

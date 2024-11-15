@@ -265,11 +265,11 @@
 // export default HouseDetail;
 
 
-//-------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------
 
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { Container, Typography, Button, CardMedia, Card, CardContent } from '@mui/material';
+import { Container, Typography, Button, CardMedia, Card, CardContent, TextField } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -280,6 +280,8 @@ const HouseDetail = () => {
   const [timeSpent, setTimeSpent] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [similarHouses, setSimilarHouses] = useState([]);
+  const [years, setYears] = useState(1);  // Default years to 1
+  const [predictedPrice, setPredictedPrice] = useState(null);  // State to store predicted price
   const timeSpentRef = useRef(0);
 
   const userId = localStorage.getItem('userId');
@@ -349,6 +351,34 @@ const HouseDetail = () => {
     }
   };
 
+  const handleBuy = async () => {
+    try {
+      const response = await axios.post('http://localhost:5000/transactions/buy', {
+        houseId,
+        userId,
+        purchaseDate: new Date()
+      });
+
+      if (response.data.success) {
+        // Optionally, you could navigate to another page or show a success message
+        alert('Transaction successful!');
+      }
+    } catch (error) {
+      console.error("Error processing transaction:", error);
+    }
+  };
+
+  const handleGetPriceInsight = async () => {
+    try {
+      const response = await axios.post(`http://localhost:5000/houses/${houseId}/priceInsight`, { years });
+      if (response.data.success) {
+        setPredictedPrice(response.data.predictedPrice);
+      }
+    } catch (error) {
+      console.error("Error fetching price insight:", error);
+    }
+  };
+
   if (!house) {
     return <Typography>Loading...</Typography>;
   }
@@ -370,7 +400,6 @@ const HouseDetail = () => {
             />
           ))}
         </Grid>
-
         <Grid>
           {house.videos && house.videos.length > 0 && (
             <div style={{ marginTop: '20px' }}>
@@ -396,24 +425,20 @@ const HouseDetail = () => {
 
               <Typography variant="h6">Price</Typography>
               <Typography>₹{house.price}</Typography>
-
               <Typography variant="h6">Area Type</Typography>
               <Typography>{house.area_type}</Typography>
-
               <Typography variant="h6">Size</Typography>
               <Typography>{house.size}</Typography>
 
               <Typography variant="h6">Bathrooms</Typography>
               <Typography>{house.bath}</Typography>
-
               <Typography variant="h6">Balconies</Typography>
               <Typography>{house.balcony}</Typography>
-
               <Typography variant="h6">Total Square Feet</Typography>
               <Typography>{house.total_sqft}</Typography>
 
               {house.isAvailable ? (
-                <Button variant="contained" color="primary" style={{ marginTop: '20px' }}>
+                <Button variant="contained" color="primary" onClick={handleBuy} style={{ marginTop: '20px' }}>
                   Buy
                 </Button>
               ) : (
@@ -439,6 +464,30 @@ const HouseDetail = () => {
               </Button>
 
               <Typography style={{ marginTop: '20px' }}>Time spent on this page: {timeSpent} seconds</Typography>
+
+              <TextField
+                label="Enter years"
+                type="number"
+                value={years}
+                onChange={(e) => setYears(e.target.value)}
+                fullWidth
+                style={{ marginTop: '20px' }}
+              />
+
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleGetPriceInsight}
+                style={{ marginTop: '10px' }}
+              >
+                Get Insight
+              </Button>
+
+              {predictedPrice && (
+                <Typography variant="h6" style={{ marginTop: '20px' }}>
+                  Predicted Price after {years} years: ₹{predictedPrice}
+                </Typography>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -448,6 +497,8 @@ const HouseDetail = () => {
 };
 
 export default HouseDetail;
+
+
 
 
 

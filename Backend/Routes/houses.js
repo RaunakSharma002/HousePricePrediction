@@ -81,6 +81,7 @@ const UserPreference = require('../models/UserPreference');
 const UserInteraction = require('../models/UserInteraction');
 require('dotenv').config();
 const cosineSimilarity = require('cosine-similarity');
+const NeighborhoodData = require('../models/NeighborhoodData');
 
 
 
@@ -431,5 +432,40 @@ router.get('/:houseId/similar', async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+
+//------------------------------------------------------------------------------------
+
+// Endpoint to calculate predicted house price based on years and annual growth rate
+router.post('/:houseId/priceInsight', async (req, res) => {
+  const { houseId } = req.params;
+  const { years } = req.body;
+
+  try {
+    const house = await House.findById(houseId);
+    if (!house) {
+      return res.status(404).json({ success: false, message: 'House not found' });
+    }
+
+    // Fetch neighborhood data for the growth rate
+    const neighborhoodData = await NeighborhoodData.findOne({ neighborhood: house.location });
+    if (!neighborhoodData) {
+      return res.status(404).json({ success: false, message: 'Neighborhood data not found' });
+    }
+
+    const annualGrowthRate = neighborhoodData.annualGrowthRate; // e.g., 0.05 for 5%
+
+    // Calculate the predicted price after 'years' years
+    const predictedPrice = house.price * Math.pow(1 + annualGrowthRate, years);
+
+    return res.status(200).json({
+      success: true,
+      predictedPrice: predictedPrice.toFixed(2),  // Fixed to two decimal points
+    });
+  } catch (error) {
+    console.error('Error calculating price insight:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 
 module.exports = router;

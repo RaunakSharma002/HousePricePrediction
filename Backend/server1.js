@@ -117,32 +117,32 @@ app.post('/predict', async (req, res) => {
 
 
 // Cron job to retrain model every Sunday at midnight
-// cron.schedule('0 0 * * SUN', async () => {
-//     try {
-//         const properties = await Property.find();
+cron.schedule('0 0 * * SUN', async () => {
+    try {
+        const properties = await Property.find();
 
-//         // Check if there is enough data to retrain the model
-//         if (properties.length < 10) {
-//             console.log('Not enough data to retrain the model');
-//             return;
-//         }
+        // Check if there is enough data to retrain the model
+        if (properties.length < 10) {
+            console.log('Not enough data to retrain the model');
+            return;
+        }
 
-//         // Save property data to a JSON file
-//         const fs = require('fs');
-//         fs.writeFileSync('property_data.json', JSON.stringify(properties), 'utf8');
+        // Save property data to a JSON file
+        const fs = require('fs');
+        fs.writeFileSync('property_data.json', JSON.stringify(properties), 'utf8');
 
-//         // Execute train_model.py to retrain the model
-//         exec('python3 train_model.py', (error, stdout, stderr) => {
-//             if (error) {
-//                 console.error(`Error in retraining model: ${error.message}`);
-//                 return;
-//             }
-//             console.log(`Model retrained successfully: ${stdout}`);
-//         });
-//     } catch (error) {
-//         console.error('Error fetching data for retraining:', error);
-//     }
-// });
+        // Execute train_model.py to retrain the model
+        exec('python3 train_model.py', (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error in retraining model: ${error.message}`);
+                return;
+            }
+            console.log(`Model retrained successfully: ${stdout}`);
+        });
+    } catch (error) {
+        console.error('Error fetching data for retraining:', error);
+    }
+});
 
 // Start the server
 const PORT = process.env.PORT || 5000;

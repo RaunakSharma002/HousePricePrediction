@@ -79,6 +79,9 @@ const authMiddleware = require('../Middleware/authMiddleware');
 const axios = require('axios');
 const UserPreference = require('../models/UserPreference');
 const UserInteraction = require('../models/UserInteraction');
+// const House = require('../models/House');
+const Report = require('../models/Report');
+const Feedback = require('../models/Feedback');
 require('dotenv').config();
 const cosineSimilarity = require('cosine-similarity');
 const NeighborhoodData = require('../models/NeighborhoodData');
@@ -464,6 +467,78 @@ router.post('/:houseId/priceInsight', async (req, res) => {
   } catch (error) {
     console.error('Error calculating price insight:', error);
     return res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+//---------------------------------------------------------------------------------
+
+
+
+
+// Report a house
+router.post('/:houseId/report', async (req, res) => {
+  const { houseId } = req.params;
+  const { userId, reason } = req.body;
+
+  try {
+    const house = await House.findById(houseId);
+    if (!house) return res.status(404).json({ error: 'House not found' });
+
+    const report = { user: userId, reason };
+    house.reports.push(report);
+    await house.save();
+
+    res.status(201).json({ success: true, message: 'Report added successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to report the house.' });
+  }
+});
+
+router.post('/:houseId/feedback', async (req, res) => {
+  const { houseId } = req.params;
+  const { userId, rating, comment } = req.body;
+
+  console.log(houseId, userId, rating, comment);  // Debugging line
+
+  try {
+    const house = await House.findById(houseId);
+    if (!house) return res.status(404).json({ error: 'House not found' });
+
+    // Create new feedback object
+    const feedback = { user: userId, rating, comment };
+
+    // Add feedback to the house's feedbacks array
+    house.feedbacks.push(feedback);
+
+    // Update average rating
+    const totalRatings = house.feedbacks.reduce((sum, feedback) => sum + feedback.rating, 0);
+    house.averageRating = totalRatings / house.feedbacks.length;
+
+    await house.save();
+
+    res.status(201).json({ success: true, message: 'Feedback added successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to add feedback.' });
+  }
+});
+
+
+
+// Get feedback for a house
+router.get('/:houseId/feedbacks', async (req, res) => {
+  const { houseId } = req.params;
+
+  try {
+    const house = await House.findById(houseId);
+    if (!house) return res.status(404).json({ error: 'House not found' });
+
+    // Directly return the feedbacks embedded in the house document
+    res.status(200).json(house.feedbacks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch feedback.' });
   }
 });
 

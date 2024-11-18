@@ -269,7 +269,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { Container, Typography, Button, CardMedia, Card, CardContent, TextField } from '@mui/material';
+import { Container, Typography, Button, CardMedia, Card, CardContent, TextField, MenuItem } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -282,9 +282,23 @@ const HouseDetail = () => {
   const [similarHouses, setSimilarHouses] = useState([]);
   const [years, setYears] = useState(1);  // Default years to 1
   const [predictedPrice, setPredictedPrice] = useState(null);  // State to store predicted price
+  const [reportReason, setReportReason] = useState('');
+  const [otherReason, setOtherReason] = useState('');
+  const [error, setError] = useState('');
+  const [rating, setRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [feedbacks, setFeedbacks] = useState([]);
   const timeSpentRef = useRef(0);
 
   const userId = localStorage.getItem('userId');
+
+  const reportOptions = [
+    'Wrong images',
+    'Wrong video',
+    'Incorrect location',
+    'Missing amenities',
+    'Other',
+  ];
 
   useEffect(() => {
     let intervalId;
@@ -295,6 +309,9 @@ const HouseDetail = () => {
         const res = await axios.get(`http://localhost:5000/houses/${houseId}`);
         setHouse(res.data);
 
+        const feedbackRes = await axios.get(`http://localhost:5000/houses/${houseId}/feedbacks`);
+        setFeedbacks(feedbackRes.data);
+
         if (userId) {
           const favoriteRes = await axios.get(`http://localhost:5000/houses/${houseId}/isFavorited`, { params: { userId } });
           setIsFavorited(favoriteRes.data.isFavorited);
@@ -302,7 +319,7 @@ const HouseDetail = () => {
           await axios.post(`http://localhost:5000/houses/${houseId}/interaction`, { userId });
         }
       } catch (error) {
-        console.error("Error fetching house details:", error);
+        console.error("Error fetching house details:", error.response || error.message || error);
       }
     };
 
@@ -379,6 +396,59 @@ const HouseDetail = () => {
     }
   };
 
+  const handleSubmitReport = async () => {
+    if (!reportReason) {
+      setError('Please select a reason for reporting.');
+      return;
+    }
+
+    if (reportReason === 'Other' && !otherReason.trim()) {
+      setError('Please provide a reason for reporting.');
+      return;
+    }
+
+    setError('');
+
+    try {
+      await axios.post(`http://localhost:5000/houses/${houseId}/report`, {
+        userId,
+        reason: reportReason === 'Other' ? otherReason : reportReason,
+      });
+
+      alert('Report submitted successfully!');
+      setReportReason('');
+      setOtherReason('');
+    } catch (error) {
+      console.error("Error submitting report:", error.response || error.message || error);
+      setError('An error occurred while submitting the report. Please try again later.');
+    }
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!rating) {
+      alert('Please provide a rating.');
+      return;
+    }
+
+    try {
+      await axios.post(`http://localhost:5000/houses/${houseId}/feedback`, {
+        userId,
+        rating,
+        comment: feedbackComment,
+      });
+
+      const updatedFeedbacks = await axios.get(`http://localhost:5000/houses/${houseId}/feedbacks`);
+      console.log("Updated Feedbacks:", updatedFeedbacks.data); // Debugging
+      setFeedbacks(updatedFeedbacks.data);
+
+      setRating(0);
+      setFeedbackComment('');
+      alert('Feedback submitted successfully!');
+    } catch (error) {
+      console.error("Error submitting feedback:", error.response || error.message || error);
+    }
+  };
+
   if (!house) {
     return <Typography>Loading...</Typography>;
   }
@@ -387,9 +457,52 @@ const HouseDetail = () => {
     <Container>
       <Typography variant="h4" gutterBottom>{house.title}</Typography>
 
-      <Grid container spacing={4}>
-        <Grid xs={12} md={6}>
-          {house.images && house.images.length > 0 && house.images.map((image, index) => (
+      {/* Report Section */}
+      <Typography variant="h5" gutterBottom>Report House</Typography>
+      <TextField
+        select
+        label="Select Reason"
+        value={reportReason}
+        onChange={(e) => setReportReason(e.target.value)}
+        fullWidth
+        margin="normal"
+      >
+        {reportOptions.map((option, index) => (
+          <MenuItem key={index} value={option}>
+            {option}
+          </MenuItem>
+        ))}
+      </TextField>
+
+      {reportReason === 'Other' && (
+        <TextField
+          label="Specify Reason"
+          value={otherReason}
+          onChange={(e) => setOtherReason(e.target.value)}
+          fullWidth
+          margin="normal"
+        />
+      )}
+
+      {error && (
+        <Typography color="error" variant="body2" gutterBottom>
+          {error}
+        </Typography>
+      )}
+
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleSubmitReport}
+        style={{ marginBottom: '20px' }}
+      >
+        Submit Report
+      </Button>
+
+      {/* Main House Details */}
+       <Grid container spacing={4}>
+         <Grid xs={12} md={6}>
+           {house.images && house.images.length > 0 && house.images.map((image, index) => (
             <CardMedia
               key={index}
               component="img"
@@ -492,6 +605,48 @@ const HouseDetail = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Feedback Section */}
+      <Typography variant="h5" gutterBottom style={{ marginTop: '40px' }}>Feedback</Typography>
+      <TextField
+        label="Rating (1-5)"
+        type="number"
+        value={rating}
+        onChange={(e) => setRating(e.target.value)}
+        fullWidth
+        margin="normal"
+      />
+      <TextField
+        label="Comment"
+        value={feedbackComment}
+        onChange={(e) => setFeedbackComment(e.target.value)}
+        fullWidth
+        margin="normal"
+      />
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleSubmitFeedback}
+        style={{ marginBottom: '20px' }}
+      >
+        Submit Feedback
+      </Button>
+
+      {/* Display Feedbacks */}
+      <Typography variant="h6" gutterBottom>Previous Feedback</Typography>
+      {feedbacks.length > 0 ? (
+        feedbacks.map((feedback, index) => (
+          <Card key={index} style={{ marginBottom: '10px' }}>
+            <CardContent>
+              <Typography><strong>User:</strong> {feedback.user}</Typography>
+              <Typography><strong>Rating:</strong> {feedback.rating}</Typography>
+              <Typography><strong>Comment:</strong> {feedback.comment}</Typography>
+            </CardContent>
+          </Card>
+        ))
+      ) : (
+        <Typography>No feedback available yet.</Typography>
+      )}
     </Container>
   );
 };

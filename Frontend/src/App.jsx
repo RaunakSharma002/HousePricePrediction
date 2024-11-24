@@ -32,6 +32,10 @@ import Profile from './pages/Profile/profile';
 import Navbar from "./components/Home/navbar";
 import HouseDetail from './components/HouseDetail/houseDetail';
 import ComparePage from './components/Compare/ComparePage';
+import ContactSeller from './components/ContactSeller/contactSeller';
+// import ChatPage from './components/ChatPage/chat';
+import SellerChats from './components/SellerChat/sellerChats';
+import SellerChatDetails from './components/SellerChatDetails/sellerChatDetails';
 
 const App = () => {
   return (
@@ -44,6 +48,10 @@ const App = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/house/:houseId" element={<HouseDetail />} />
         <Route path="/compare" element={<ComparePage />} />
+        <Route path="/contact-seller/:sellerId" element={<ContactSeller />} />
+        {/* <Route path="/chat/:sellerId" element={<ChatPage />} /> */}
+        <Route path="/sellerChat" element={<SellerChats />} />
+        <Route path="/seller/chat/:chatId" element={<SellerChatDetails />} />
       </Routes>
     </Router>
   );

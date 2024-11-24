@@ -515,6 +515,8 @@ const HouseForm = () => {
   const [videos, setVideos] = useState([]);
   const [locationOptions, setLocationOptions] = useState([]);
 
+  const userId = localStorage.getItem('userId');
+
   const areaTypes = ['Urban', 'Suburban', 'Rural'];
   const amenitiesList = ['Swimming Pool', 'Garden', 'Gym', 'Parking', 'Security', 'Playground', 'Clubhouse'];
 
@@ -575,6 +577,9 @@ const HouseForm = () => {
     Object.keys(houseData).forEach((key) => formData.append(key, houseData[key]));
     images.forEach((image) => formData.append('images', image));
     videos.forEach((video) => formData.append('videos', video));
+
+    const sellerId = userId; // Replace with actual seller ID
+    formData.append('seller', sellerId);
 
     try {
       await axios.post('http://localhost:5000/houses', formData, {

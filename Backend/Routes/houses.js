@@ -82,6 +82,7 @@ const UserInteraction = require('../models/UserInteraction');
 // const House = require('../models/House');
 const Report = require('../models/Report');
 const Feedback = require('../models/Feedback');
+const User = require('../models/User');
 require('dotenv').config();
 const cosineSimilarity = require('cosine-similarity');
 const NeighborhoodData = require('../models/NeighborhoodData');
@@ -143,7 +144,7 @@ const router = express.Router();
 
 router.post('/', upload.fields([{ name: 'images' }, { name: 'videos' }]), async (req, res) => {
   try {
-    const { title, description, area_type, availability, location, size, society, total_sqft, bath, balcony, price, amenities } = req.body;
+    const { title, description, area_type, availability, location, size, society, total_sqft, bath, balcony, price, amenities, seller } = req.body;
     const images = req.files['images'] ? req.files['images'].map(file => file.path) : [];
     const videos = req.files['videos'] ? req.files['videos'].map(file => file.path) : [];
 
@@ -162,6 +163,7 @@ router.post('/', upload.fields([{ name: 'images' }, { name: 'videos' }]), async 
       images,
       videos,
       amenities: amenities ? amenities.split(',') : [], // Store amenities as an array
+      seller
     });
 
     await house.save();

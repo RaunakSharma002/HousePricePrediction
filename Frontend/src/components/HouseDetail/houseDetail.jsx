@@ -605,6 +605,18 @@ const HouseDetail = () => {
           </Card>
         </Grid>
       </Grid>
+  
+              
+      {/*Button for contact page*/}
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => navigate(`/contact-seller/${house.seller._id}`)}
+        style={{ marginTop: '20px', marginLeft: '10px' }}
+      >
+        Contact Seller
+      </Button>
+
 
       {/* Feedback Section */}
       <Typography variant="h5" gutterBottom style={{ marginTop: '40px' }}>Feedback</Typography>

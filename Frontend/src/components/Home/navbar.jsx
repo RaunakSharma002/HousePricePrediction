@@ -13,6 +13,7 @@ function Navbar(){
                     <Button color="inherit" component={Link} to="/"> home </Button>
                     <Button color="inherit" component={Link} to="/profile"> Profile</Button>
                     <Button color="inherit" component={Link} to="/register"> Register</Button>
+                    <Button color="inherit" component={Link} to="/sellerChat"> SellerChat</Button>
                     
                 </Toolbar>
 
